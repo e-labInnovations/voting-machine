@@ -5,15 +5,16 @@ LiquidCrystal_I2C lcd(LCD_I2C_ADDRESS, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 
 bool ready_to_vote = false;
 bool vote_done = false;
-bool show_result = true;
-int votes[] = {100, 90, 55, 0, 0, 44, 0, 0, 0, 0};
+int votes[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 String cand_names[] = {CANDIDATE_1, CANDIDATE_2, CANDIDATE_3, CANDIDATE_4, CANDIDATE_5, CANDIDATE_6, CANDIDATE_7, CANDIDATE_8, CANDIDATE_9, CANDIDATE_10};
 
 void setup() {
   for(char btn_pin = 0; btn_pin<10; btn_pin++) {
     pinMode(btn_pin, INPUT_PULLUP);
   }
-  pinMode(13, OUTPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+  pinMode(RESULT_KEY, INPUT);
+  digitalWrite(BUZZER_PIN, LOW);
 
   lcd.begin(16, 2);
   lcd.setCursor(0, 0);
@@ -25,7 +26,7 @@ void setup() {
 }
 
 void loop() {
-  if(show_result) {
+  if(digitalRead(RESULT_KEY)) {
     for(char pos=0; pos<10; pos+=2) {
       lcd.setCursor(0, 0);
       String line1 = cand_names[pos] + " : " + votes[pos];
@@ -40,20 +41,27 @@ void loop() {
     lcd.print("    READY TO    ");
     lcd.setCursor(0, 1);
     lcd.print("      VOTE      ");
-    
-    if (digitalRead(0) &&
-    digitalRead(1) &&
-    digitalRead(2) &&
-    digitalRead(3) &&
-    digitalRead(4) &&
-    digitalRead(5) &&
-    digitalRead(6) &&
-    digitalRead(7) &&
-    digitalRead(8) &&
-    digitalRead(9)) {
-      digitalWrite(13, LOW);
-    } else {
-      digitalWrite(13, HIGH);
+
+    if(!digitalRead(0)) {
+      votingDone(0);
+    } else if(!digitalRead(1)) {
+      votingDone(1);
+    } else if(!digitalRead(2)) {
+      votingDone(2);
+    } else if(!digitalRead(3)) {
+      votingDone(3);
+    } else if(!digitalRead(4)) {
+      votingDone(4);
+    } else if(!digitalRead(5)) {
+      votingDone(5);
+    } else if(!digitalRead(6)) {
+      votingDone(6);
+    } else if(!digitalRead(7)) {
+      votingDone(7);
+    } else if(!digitalRead(8)) {
+      votingDone(8);
+    } else if(!digitalRead(9)) {
+      votingDone(9);
     }
   } else {
     if(vote_done) {
@@ -61,6 +69,10 @@ void loop() {
       lcd.print("     VOTING     ");
       lcd.setCursor(0, 1);
       lcd.print("   SUCCESSFUL   ");
+      delay(SUCCESS_SHOW_TIME);
+      vote_done = false;
+      ready_to_vote = true;
+      digitalWrite(BUZZER_PIN, LOW);
     } else {
       lcd.setCursor(0, 0);
       lcd.print(" VOTING MACHINE ");
@@ -76,4 +88,11 @@ String formatString(String text) {
     text += ' ';
   }
   return text;
+}
+
+void votingDone(char pos) {
+  votes[pos] = votes[pos]+1;
+  vote_done = true;
+  ready_to_vote = false;
+  digitalWrite(BUZZER_PIN, HIGH);
 }

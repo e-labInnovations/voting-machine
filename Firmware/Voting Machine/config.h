@@ -1,5 +1,9 @@
 #define LCD_I2C_ADDRESS 0x20
 
+#define SUCCESS_SHOW_TIME 2000
+#define BUZZER_PIN A0
+#define RESULT_KEY A1
+
 #define CANDIDATE_1 "CAND1"
 #define CANDIDATE_2 "CAND2"
 #define CANDIDATE_3 "CAND3"
