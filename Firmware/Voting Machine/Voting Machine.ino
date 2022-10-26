@@ -58,7 +58,7 @@ void setup() {
       lcd.setCursor(0, 0);
       lcd.print(" ERROR OPENING  ");
       lcd.setCursor(0, 1);
-      lcd.print("      FILE      ");
+      lcd.print("  tempRes.txt   ");
     }
     fileObj.close();
   } else {

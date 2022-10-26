@@ -4,7 +4,7 @@
 #define RESULT_DELAY      3000
 #define BUZZER_PIN  A0
 #define RESULT_KEY  A1
-#define RESET_BTN    A2
+#define RESET_BTN   A2
 #define READY_LED   A3
 
 #define CANDIDATE_1 "CAND1"
