@@ -79,6 +79,7 @@ void setup() {
 void loop() {
   digitalWrite(READY_LED, ready_to_vote);
   if(digitalRead(RESULT_KEY)) {
+    saveResultFile();
     for(char pos=0; pos<10; pos+=2) {
       lcd.setCursor(0, 0);
       String line1 = cand_names[pos] + " : " + votes[pos];
@@ -88,23 +89,6 @@ void loop() {
       lcd.print(formatString(line2));
       delay(RESULT_DELAY);
     }
-
-    SD.remove("result.txt");
-    fileObj = SD.open("result.txt", FILE_WRITE);
-    if (fileObj) {
-      for (int i = 0; i < 10; i++) {
-        fileObj.print(cand_names[i]);
-        fileObj.print(" : ");
-        fileObj.println(votes[i]);
-      }
-      fileObj.close();
-    } else {
-      lcd.setCursor(0, 0);
-      lcd.print(" SD CARD ERROR  ");
-      lcd.setCursor(0, 1);
-      lcd.print("   result.txt   ");
-    }    
-    
   } else if(ready_to_vote) {
     lcd.setCursor(0, 0);
     lcd.print("    READY TO    ");
@@ -133,7 +117,10 @@ void loop() {
       votingDone(9);
     }
   } else if(digitalRead(RESET_BTN)) {
-    
+    for(char i=0;i<10;i++) {
+      votes[i] = 0;
+    }
+    saveTempFile();
   } else {
     if(vote_done) {
       lcd.setCursor(0, 0);
@@ -166,7 +153,10 @@ void votingDone(char pos) {
   votes[pos] = votes[pos]+1;
   vote_done = true;
   ready_to_vote = false;
+  saveTempFile();
+}
 
+void saveTempFile() {
   SD.remove("tempRes.txt");
   fileObj = SD.open("tempRes.txt", FILE_WRITE);
   if (fileObj) {
@@ -181,4 +171,22 @@ void votingDone(char pos) {
     lcd.setCursor(0, 1);
     lcd.print("  tempRes.txt   ");
   }
+}
+
+void saveResultFile() {
+  SD.remove("result.txt");
+  fileObj = SD.open("result.txt", FILE_WRITE);
+  if (fileObj) {
+    for (int i = 0; i < 10; i++) {
+      fileObj.print(cand_names[i]);
+      fileObj.print(" : ");
+      fileObj.println(votes[i]);
+    }
+    fileObj.close();
+  } else {
+    lcd.setCursor(0, 0);
+    lcd.print(" SD CARD ERROR  ");
+    lcd.setCursor(0, 1);
+    lcd.print("   result.txt   ");
+  }      
 }
