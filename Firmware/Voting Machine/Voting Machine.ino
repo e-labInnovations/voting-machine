@@ -16,9 +16,12 @@ void setup() {
   for(char btn_pin = 0; btn_pin<10; btn_pin++) {
     pinMode(btn_pin, INPUT_PULLUP);
   }
-  pinMode(BUZZER_PIN, OUTPUT);
   pinMode(RESULT_KEY, INPUT);
+  pinMode(RESET_BTN, INPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+  pinMode(READY_LED, OUTPUT);
   digitalWrite(BUZZER_PIN, LOW);
+  digitalWrite(READY_LED, LOW);
 
   lcd.begin(16, 2);
   lcd.setCursor(0, 0);
@@ -74,6 +77,7 @@ void setup() {
 }
 
 void loop() {
+  digitalWrite(READY_LED, ready_to_vote);
   if(digitalRead(RESULT_KEY)) {
     for(char pos=0; pos<10; pos+=2) {
       lcd.setCursor(0, 0);
@@ -82,7 +86,7 @@ void loop() {
       lcd.setCursor(0, 1);
       String line2 = cand_names[pos+1] + " : " + votes[pos+1];
       lcd.print(formatString(line2));
-      delay(1000);
+      delay(RESULT_DELAY);
     }
 
     SD.remove("result.txt");
@@ -128,6 +132,8 @@ void loop() {
     } else if(!digitalRead(9)) {
       votingDone(9);
     }
+  } else if(digitalRead(RESET_BTN)) {
+    
   } else {
     if(vote_done) {
       lcd.setCursor(0, 0);
