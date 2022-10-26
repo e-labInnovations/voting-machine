@@ -1,6 +1,8 @@
 #include "config.h"
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
+#include <SPI.h>
+#include <SD.h>
 
 LiquidCrystal_I2C lcd(LCD_I2C_ADDRESS, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 
@@ -8,6 +10,7 @@ bool ready_to_vote = false;
 bool vote_done = false;
 int votes[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 String cand_names[] = {CANDIDATE_1, CANDIDATE_2, CANDIDATE_3, CANDIDATE_4, CANDIDATE_5, CANDIDATE_6, CANDIDATE_7, CANDIDATE_8, CANDIDATE_9, CANDIDATE_10};
+File fileObj;
 
 void setup() {
   for(char btn_pin = 0; btn_pin<10; btn_pin++) {
@@ -24,6 +27,50 @@ void setup() {
   lcd.print(" VOTING MACHINE ");
   delay(2000);
   ready_to_vote = true;
+
+  if (!SD.begin(10)) {
+    lcd.setCursor(0, 0);
+    lcd.print(" SD CARD ERROR  ");
+    lcd.setCursor(0, 1);
+    lcd.print("                ");
+    while (1);
+  }
+
+  if (SD.exists("tempRes.txt")) {
+    fileObj = SD.open("tempRes.txt");
+    if (fileObj) {
+      String finalString = "";
+      while (fileObj.available()) {
+        finalString += (char)fileObj.read();
+      }
+      
+      char oldIndex = 0;
+      for(char i=0;i<10;i++) {
+        char index = finalString.indexOf(';', oldIndex+1);
+        int voteValue = finalString.substring(oldIndex + (i?1:0), index).toInt();
+        oldIndex = index;
+        votes[i] = voteValue;
+      }
+    } else {
+      lcd.setCursor(0, 0);
+      lcd.print(" ERROR OPENING  ");
+      lcd.setCursor(0, 1);
+      lcd.print("      FILE      ");
+    }
+    fileObj.close();
+  } else {
+    fileObj = SD.open("tempRes.txt", FILE_WRITE);
+    for (int i = 0; i < 10; i++) {
+      fileObj.print(votes[i]);
+      fileObj.print(";");
+    }
+    fileObj.close();
+  }
+
+  if (!SD.exists("result.txt")) {
+    fileObj = SD.open("result.txt", FILE_WRITE);
+    fileObj.close();
+  }
 }
 
 void loop() {
@@ -37,6 +84,23 @@ void loop() {
       lcd.print(formatString(line2));
       delay(1000);
     }
+
+    SD.remove("result.txt");
+    fileObj = SD.open("result.txt", FILE_WRITE);
+    if (fileObj) {
+      for (int i = 0; i < 10; i++) {
+        fileObj.print(cand_names[i]);
+        fileObj.print(" : ");
+        fileObj.println(votes[i]);
+      }
+      fileObj.close();
+    } else {
+      lcd.setCursor(0, 0);
+      lcd.print(" SD CARD ERROR  ");
+      lcd.setCursor(0, 1);
+      lcd.print("   result.txt   ");
+    }    
+    
   } else if(ready_to_vote) {
     lcd.setCursor(0, 0);
     lcd.print("    READY TO    ");
@@ -92,8 +156,23 @@ String formatString(String text) {
 }
 
 void votingDone(char pos) {
+  digitalWrite(BUZZER_PIN, HIGH);
   votes[pos] = votes[pos]+1;
   vote_done = true;
   ready_to_vote = false;
-  digitalWrite(BUZZER_PIN, HIGH);
+
+  SD.remove("tempRes.txt");
+  fileObj = SD.open("tempRes.txt", FILE_WRITE);
+  if (fileObj) {
+    for (int i = 0; i < 10; i++) {
+      fileObj.print(votes[i]);
+      fileObj.print(";");
+    }
+    fileObj.close();
+  } else {
+    lcd.setCursor(0, 0);
+    lcd.print(" SD CARD ERROR  ");
+    lcd.setCursor(0, 1);
+    lcd.print("  tempRes.txt   ");
+  }
 }
