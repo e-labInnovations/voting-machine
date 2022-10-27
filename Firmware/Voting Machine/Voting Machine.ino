@@ -31,13 +31,13 @@ void setup() {
 
   int isVoteExist = getVoteFromEEPROM(0);
   if (isVoteExist>=0) {
-    for (char i = 0; i < 10; i++) {
-      saveVoteToEEPROM(i, votes[i]);
-    }
-  } else {
     for(char i=0;i<10;i++) {
       int vote = getVoteFromEEPROM(i);
       votes[i] = vote;
+    }
+  } else {
+    for (char i = 0; i < 10; i++) {
+      saveVoteToEEPROM(i, votes[i]);
     }
   }
 }
