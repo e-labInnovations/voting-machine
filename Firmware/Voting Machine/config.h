@@ -7,13 +7,13 @@
 #define RESET_BTN   A2
 #define READY_LED   A3
 
-#define CANDIDATE_1 "CAND1"
-#define CANDIDATE_2 "CAND2"
-#define CANDIDATE_3 "CAND3"
-#define CANDIDATE_4 "CAND4"
-#define CANDIDATE_5 "CAND5"
-#define CANDIDATE_6 "CAND6"
-#define CANDIDATE_7 "CAND7"
-#define CANDIDATE_8 "CAND8"
-#define CANDIDATE_9 "CAND9"
-#define CANDIDATE_10 "CAND10"
+#define CANDIDATE_1   "CAND1"
+#define CANDIDATE_2   "CAND2"
+#define CANDIDATE_3   "CAND3"
+#define CANDIDATE_4   "CAND4"
+#define CANDIDATE_5   "CAND5"
+#define CANDIDATE_6   "CAND6"
+#define CANDIDATE_7   "CAND7"
+#define CANDIDATE_8   "CAND8"
+#define CANDIDATE_9   "CAND9"
+#define CANDIDATE_10  "CAND10"

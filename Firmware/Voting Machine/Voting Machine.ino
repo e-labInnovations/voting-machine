@@ -1,8 +1,7 @@
 #include "config.h"
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
-#include <SPI.h>
-#include <SD.h>
+#include <EEPROM.h>
 
 LiquidCrystal_I2C lcd(LCD_I2C_ADDRESS, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
 
@@ -10,7 +9,6 @@ bool ready_to_vote = false;
 bool vote_done = false;
 int votes[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 String cand_names[] = {CANDIDATE_1, CANDIDATE_2, CANDIDATE_3, CANDIDATE_4, CANDIDATE_5, CANDIDATE_6, CANDIDATE_7, CANDIDATE_8, CANDIDATE_9, CANDIDATE_10};
-File fileObj;
 
 void setup() {
   for(char btn_pin = 0; btn_pin<10; btn_pin++) {
@@ -31,55 +29,22 @@ void setup() {
   delay(2000);
   ready_to_vote = true;
 
-  if (!SD.begin(10)) {
-    lcd.setCursor(0, 0);
-    lcd.print(" SD CARD ERROR  ");
-    lcd.setCursor(0, 1);
-    lcd.print("                ");
-    while (1);
-  }
-
-  if (SD.exists("tempRes.txt")) {
-    fileObj = SD.open("tempRes.txt");
-    if (fileObj) {
-      String finalString = "";
-      while (fileObj.available()) {
-        finalString += (char)fileObj.read();
-      }
-      
-      char oldIndex = 0;
-      for(char i=0;i<10;i++) {
-        char index = finalString.indexOf(';', oldIndex+1);
-        int voteValue = finalString.substring(oldIndex + (i?1:0), index).toInt();
-        oldIndex = index;
-        votes[i] = voteValue;
-      }
-    } else {
-      lcd.setCursor(0, 0);
-      lcd.print(" ERROR OPENING  ");
-      lcd.setCursor(0, 1);
-      lcd.print("  tempRes.txt   ");
+  int isVoteExist = getVoteFromEEPROM(0);
+  if (isVoteExist>=0) {
+    for (char i = 0; i < 10; i++) {
+      saveVoteToEEPROM(i, votes[i]);
     }
-    fileObj.close();
   } else {
-    fileObj = SD.open("tempRes.txt", FILE_WRITE);
-    for (int i = 0; i < 10; i++) {
-      fileObj.print(votes[i]);
-      fileObj.print(";");
+    for(char i=0;i<10;i++) {
+      int vote = getVoteFromEEPROM(i);
+      votes[i] = vote;
     }
-    fileObj.close();
-  }
-
-  if (!SD.exists("result.txt")) {
-    fileObj = SD.open("result.txt", FILE_WRITE);
-    fileObj.close();
   }
 }
 
 void loop() {
   digitalWrite(READY_LED, ready_to_vote);
   if(digitalRead(RESULT_KEY)) {
-    saveResultFile();
     for(char pos=0; pos<10; pos+=2) {
       lcd.setCursor(0, 0);
       String line1 = cand_names[pos] + " : " + votes[pos];
@@ -89,6 +54,16 @@ void loop() {
       lcd.print(formatString(line2));
       delay(RESULT_DELAY);
     }
+  } else if(digitalRead(RESET_BTN)) {
+    for(char i=0;i<10;i++) {
+      votes[i] = 0;
+      saveVoteToEEPROM(i, 0);
+    }
+    lcd.setCursor(0, 0);
+    lcd.print(" RESULT CLEARED ");
+    lcd.setCursor(0, 1);
+    lcd.print("                ");
+    delay(2000);
   } else if(ready_to_vote) {
     lcd.setCursor(0, 0);
     lcd.print("    READY TO    ");
@@ -116,11 +91,6 @@ void loop() {
     } else if(!digitalRead(9)) {
       votingDone(9);
     }
-  } else if(digitalRead(RESET_BTN)) {
-    for(char i=0;i<10;i++) {
-      votes[i] = 0;
-    }
-    saveTempFile();
   } else {
     if(vote_done) {
       lcd.setCursor(0, 0);
@@ -153,40 +123,18 @@ void votingDone(char pos) {
   votes[pos] = votes[pos]+1;
   vote_done = true;
   ready_to_vote = false;
-  saveTempFile();
+  saveVoteToEEPROM(pos, votes[pos]);
 }
 
-void saveTempFile() {
-  SD.remove("tempRes.txt");
-  fileObj = SD.open("tempRes.txt", FILE_WRITE);
-  if (fileObj) {
-    for (int i = 0; i < 10; i++) {
-      fileObj.print(votes[i]);
-      fileObj.print(";");
-    }
-    fileObj.close();
-  } else {
-    lcd.setCursor(0, 0);
-    lcd.print(" SD CARD ERROR  ");
-    lcd.setCursor(0, 1);
-    lcd.print("  tempRes.txt   ");
-  }
+void saveVoteToEEPROM(int pos, int vote) {
+  int address = pos * 2;
+  EEPROM.write(address, vote >> 8);
+  EEPROM.write(address + 1, vote & 0xFF);  
 }
 
-void saveResultFile() {
-  SD.remove("result.txt");
-  fileObj = SD.open("result.txt", FILE_WRITE);
-  if (fileObj) {
-    for (int i = 0; i < 10; i++) {
-      fileObj.print(cand_names[i]);
-      fileObj.print(" : ");
-      fileObj.println(votes[i]);
-    }
-    fileObj.close();
-  } else {
-    lcd.setCursor(0, 0);
-    lcd.print(" SD CARD ERROR  ");
-    lcd.setCursor(0, 1);
-    lcd.print("   result.txt   ");
-  }      
+int getVoteFromEEPROM(int pos) {
+  int address = pos * 2;
+  byte byte1 = EEPROM.read(address);
+  byte byte2 = EEPROM.read(address + 1);
+  return (byte1 << 8) + byte2;
 }
